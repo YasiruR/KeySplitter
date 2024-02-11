@@ -2,61 +2,53 @@ package main
 
 import (
 	"fmt"
+	"github.com/YasiruR/keySplitter/domain"
+	"github.com/YasiruR/keySplitter/services"
 	"strconv"
 )
 
 func main() {
-	//fmt.Println(subtractN(3, 7))
-	//fmt.Println(subtractN(89, 117))
-	//fmt.Println(subtractN(21, 93))
-	//fmt.Println(subtractN(3, 125))
-	//fmt.Println(subtractN(43, 9561)) // 1582
+	s := services.NewSplitter()
+	var secret domain.Secret = []byte(`testing 123 in ~!@#$%`)
+	shares := s.Split(secret, 2)
+	fmt.Println(`shares: `, shares)
 
-	fmt.Println(subtract([]int{3, 89, 21, 3, 43}, []int{7, 117, 93, 125, 9561}))
+	m := services.NewMerger()
+	fmt.Println(`res secret: `, string(m.Merge(shares)))
 }
 
-func subtract(a, b []int) (c []int) {
-	if len(a) != len(b) {
-		return nil
-	}
-
-	for i := 0; i < len(a); i++ {
-		c = append(c, subtractN(a[i], b[i]))
-	}
-
-	return
-}
-
-func subtractN(a, b int) int {
+func addN(a, b int) int {
 	var cStr string
 	aStr, bStr := strconv.Itoa(a), strconv.Itoa(b)
 
-	var excDigs int
-	if len(aStr) < len(bStr) {
-		excDigs = len(bStr) - len(aStr)
-		for i := 0; i < excDigs; i++ {
-			digB, _ := strconv.Atoi(string(bStr[i]))
-			cStr += strconv.Itoa(10 - digB)
+	// Adjusting numbers into same lengths by adding leading zeros
+	var excDigits int
+	if len(aStr) >= len(bStr) {
+		excDigits = len(aStr) - len(bStr)
+		for i := 0; i < excDigits; i++ {
+			bStr = `0` + bStr
+		}
+	} else {
+		excDigits = len(bStr) - len(aStr)
+		for i := 0; i < excDigits; i++ {
+			aStr = `0` + aStr
 		}
 	}
 
-	for index, _ := range aStr {
-		digA, _ := strconv.Atoi(string(aStr[index]))
-		digB, _ := strconv.Atoi(string(bStr[excDigs+index]))
-
-		digC := subtractD(digA, digB)
-		//fmt.Printf("%d - %d = %d\n", digA, digB, digC)
-		cStr += strconv.Itoa(digC)
+	for i, _ := range aStr {
+		digA, _ := strconv.Atoi(string(aStr[i]))
+		digB, _ := strconv.Atoi(string(bStr[i]))
+		cStr += strconv.Itoa(addD(digA, digB))
 	}
 
 	c, _ := strconv.Atoi(cStr)
 	return c
 }
 
-func subtractD(digA, digB int) (digC int) {
-	if digA >= digB {
-		return digA - digB
+func addD(a, b int) int {
+	sum := a + b
+	if sum > 9 {
+		return sum - 10
 	}
-
-	return digA + 10 - digB
+	return sum
 }

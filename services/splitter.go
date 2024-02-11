@@ -27,7 +27,6 @@ func NewSplitter() domain.Splitter {
 func (s *Splitter) Split(sec domain.Secret, n int) []domain.Share {
 	rand.Seed(time.Now().Unix())
 	lenSec := len(sec)
-	//var shares []domain.Share
 	var shares [][]int
 
 	if lenSec == 0 {
@@ -44,7 +43,7 @@ func (s *Splitter) Split(sec domain.Secret, n int) []domain.Share {
 	// Generate n-1 random int arrays with the same length
 	for i := 0; i < n-1; i++ {
 		// Construct a share with random numbers
-		share := make([]int, lenSec)
+		var share []int
 		for j := 0; j < lenSec; j++ {
 			randInt := rand.Intn(1000)
 			share = append(share, randInt)
@@ -62,10 +61,11 @@ func (s *Splitter) Split(sec domain.Secret, n int) []domain.Share {
 	for i := 0; i < n-1; i++ {
 		if i == 0 {
 			res = secIntList
+			shareList = append(shareList, domain.Share{Id: i, PartKey: shares[i]})
 		}
 
 		res = s.subtract(res, shares[i])
-		shareList = append(shareList, domain.Share{Id: i, PartKey: res})
+		shareList = append(shareList, domain.Share{Id: i + 1, PartKey: res})
 	}
 
 	// Return the array of shares
@@ -84,36 +84,25 @@ func (s *Splitter) subtract(a, b []int) (c []int) {
 	return
 }
 
+// Each digit of a number is subtracted from the corresponding digit in
+// the second number without the carry
+// (eg: 3-7 = 13-7 = 6, 89-117 = 972, 21-93 = 38, 3-125 = 988, 116-79 = 147)
 func (s *Splitter) subtractN(a, b int) int {
 	var cStr string
-	aStr, bStr := strconv.Itoa(a), strconv.Itoa(b)
+	aStr, bStr := numToSameLen(strconv.Itoa(a), strconv.Itoa(b))
 
-	var excDigs int
-	if len(aStr) < len(bStr) {
-		excDigs = len(bStr) - len(aStr)
-		for i := 0; i < excDigs; i++ {
-			digB, _ := strconv.Atoi(string(bStr[i]))
-			cStr += strconv.Itoa(10 - digB)
-		}
-	}
-
-	for index, _ := range aStr {
-		digA, _ := strconv.Atoi(string(aStr[index]))
-		digB, _ := strconv.Atoi(string(bStr[excDigs+index]))
-
-		digC := s.subtractD(digA, digB)
-		//fmt.Printf("%d - %d = %d\n", digA, digB, digC)
-		cStr += strconv.Itoa(digC)
+	for i, _ := range aStr {
+		digA, _ := strconv.Atoi(string(aStr[i]))
+		digB, _ := strconv.Atoi(string(bStr[i]))
+		cStr += strconv.Itoa(s.subtractD(digA, digB))
 	}
 
 	c, _ := strconv.Atoi(cStr)
 	return c
 }
 
-// Each digit of an int array is subtracted from the corresponding digit in
-// the second array without the carry
-// (eg: 3-7 = 13-7 = 6, 89-117 = 972, 21-93 = 38, 3-125 = 988)
-func (s *Splitter) subtractD(digA, digB int) (digC int) {
+// Subtraction of individual digits to satisfy the requirement of subtractN
+func (s *Splitter) subtractD(digA, digB int) int {
 	if digA >= digB {
 		return digA - digB
 	}
